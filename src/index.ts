@@ -122,7 +122,20 @@ export function targetConstructorToSchema(
   metadatas = populateMetadatasWithConstraints(storage, metadatas)
 
   const schemas = validationMetadataArrayToSchemas(metadatas, userOptions)
-  return Object.values(schemas).length ? Object.values(schemas)[0] : {}
+
+  // If `targetConstructor` has no metadata of its own, no schema would be
+  // generated for it. In this case, return the schema of its closest parent.
+  for (
+    let target = targetConstructor;
+    target != null;
+    target = Object.getPrototypeOf(target)
+  ) {
+    if (target.name in schemas) {
+      return schemas[target.name]
+    }
+  }
+
+  return {}
 }
 
 /**
@@ -264,6 +277,7 @@ function getRequiredPropNames(
       metas && metas.some(({ type }) => type === cv.ValidationTypes.IS_DEFINED)
     )
   }
+
   function isOptional(metas: ValidationMetadata[]) {
     return (
       metas &&

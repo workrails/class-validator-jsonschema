@@ -13,7 +13,11 @@ import {
 } from 'class-validator'
 import _get from 'lodash.get'
 
-import { JSONSchema, validationMetadatasToSchemas } from '../src'
+import {
+  JSONSchema,
+  targetConstructorToSchema,
+  validationMetadatasToSchemas,
+} from '../src'
 
 @JSONSchema({
   description: 'Contains email, password and phone',
@@ -43,7 +47,6 @@ class BaseContent {
 @JSONSchema({
   title: 'User object',
 })
-// @ts-ignore: not referenced
 class User extends BaseContent {
   @MinLength(10)
   @MaxLength(20)
@@ -64,6 +67,8 @@ class User extends BaseContent {
 
   @Contains('hello') welcome: string
 }
+
+class NoOwnMetadata extends User {}
 
 const metadatas = _get(getFromContainer(MetadataStorage), 'validationMetadatas')
 
@@ -139,5 +144,12 @@ describe('Inheriting validation decorators', () => {
 
     expect(schemas.BaseContent.required).toEqual(['email', 'phone'])
     expect(schemas.User.required).toEqual(['password', 'email'])
+  })
+
+  it('handles classes that have no own metadata', () => {
+    const parentSchema = targetConstructorToSchema(User)
+    const noOwnMetadataSchema = targetConstructorToSchema(NoOwnMetadata)
+
+    expect(noOwnMetadataSchema).toEqual(parentSchema)
   })
 })
